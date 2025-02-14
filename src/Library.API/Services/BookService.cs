@@ -14,14 +14,14 @@ public class BookService : IBookService
 
     public async Task<bool> CreateAsync(Book book)
     {
-        var existingBook = await GetByIsbnAsync(book.Isbn);
-        if (existingBook is not null)
-        {
-        }
+        //var existingBook = await GetByIsbnAsync(book.Isbn);
+        //if (existingBook is not null)
+        //{
+        //}
 
         using var connection = await _connectionFactory.CreateConnectionAsync();
         await connection.ExecuteAsync(
-            @"INSERT INTO Books (Isbn, Ttile, Author, ShortDescription, PageCount, ReleaseDate)
+            @"INSERT INTO Books (Isbn, Title, Author, ShortDescription, PageCount, ReleaseDate)
             VALUES (@Isbn, @Title, @Author, @ShortDescription, @PageCount, @ReleaseDate)", book);
 
         return true;

@@ -1,4 +1,6 @@
 using Library.API.Data;
+using Library.API.Models;
+using Library.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,12 +12,28 @@ builder.Services.AddSingleton<IDbConnectionFactory>(_ =>
     new SqliteConnectionFactory(builder.Configuration.GetValue<string>("Database:ConnectionString")));
 
 builder.Services.AddSingleton<DatabaseInitializer>();
+builder.Services.AddSingleton<IBookService, BookService>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.MapPost("books", async (Book book, IBookService bookService) =>
+{
+    var created = await bookService.CreateAsync(book);
+
+    if (!created)
+    {
+        return Results.BadRequest(new
+        {
+            errorMessage = "A book with this ISBN-13 already exists"
+        });
+    }
+
+    return Results.Created($"/books/${book.Isbn}",book);
+});
 
 
 // Db init here 
