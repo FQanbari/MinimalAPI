@@ -6,6 +6,7 @@ using Library.API.Models;
 using Library.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
+using System.Net.Mail;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,7 +38,8 @@ app.UseAuthorization();
 app.MapPost("books",
     [Authorize(AuthenticationSchemes = ApiKeySchemeConstants.SchemeName)]
     async (Book book, IBookService bookService,
-    IValidator<Book> validator) =>
+    IValidator<Book> validator, LinkGenerator linker,
+    HttpContext context) =>
 {
     var validationResult = await validator.ValidateAsync(book);
     if (!validationResult.IsValid)
@@ -55,8 +57,12 @@ app.MapPost("books",
         });
     }
 
-    return Results.Created($"/books/${book.Isbn}",book);
-});
+    var path = linker.GetPathByName("GetBook", new { isbn = book.Isbn });
+    var locationUri = linker.GetUriByName(context, "GetBook", new { isbn = book.Isbn });
+    return Results.Created(locationUri, book);
+    //return Results.CreatedAtRoute("GetBook", new { isbn = book.Isbn }, book); **
+    //return Results.Created($"/books/${book.Isbn}",book);
+}).WithName("CreateBook");
 
 app.MapGet("books", async (IBookService bookService, string? searchTerm) =>
 {
@@ -69,13 +75,13 @@ app.MapGet("books", async (IBookService bookService, string? searchTerm) =>
 
     var books = await bookService.GetAllAsync();
     return Results.Ok(books);
-});
+}).WithName("GetBooks");
 
 app.MapGet("books/{isbn}", async (string isbn, IBookService bookService) =>
 {
     var book = await bookService.GetByIsbnAsync(isbn);
     return book is not null ? Results.Ok(book) : Results.NotFound();
-});
+}).WithName("GetBook");
 
 app.MapPut("books/{isbn}", async (string isbn, Book book, IBookService bookService,
     IValidator<Book> validator) =>
@@ -89,7 +95,7 @@ app.MapPut("books/{isbn}", async (string isbn, Book book, IBookService bookServi
 
     var updated = await bookService.UpdateAsync(book);
     return updated ? Results.Ok(book) : Results.NotFound();
-});
+}).WithName("UpdateBook");
 
 
 app.MapDelete("books/{isbn}", async (string isbn, IBookService bookService,
@@ -97,7 +103,7 @@ app.MapDelete("books/{isbn}", async (string isbn, IBookService bookService,
 {
     var deleted = await bookService.DeleteAsync(isbn);
     return deleted ? Results.NoContent() : Results.NotFound();
-});
+}).WithName("DeleteBook");
 
 // Db init here 
 var databaseInitializer = app.Services.GetRequiredService<DatabaseInitializer>();
