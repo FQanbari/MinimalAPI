@@ -1,13 +1,21 @@
 using FluentValidation;
 using FluentValidation.Results;
+using Library.API.Auth;
 using Library.API.Data;
 using Library.API.Models;
 using Library.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Configuration.AddJsonFile("appsettings.Local.json", true, true);
+
+builder.Services.AddAuthentication(ApiKeySchemeConstants.SchemeName)
+    .AddScheme<ApiKeyAuthSchemeOptions, ApiKeyAuthHandler>(ApiKeySchemeConstants.SchemeName, _ => {});
+builder.Services.AddAuthorization();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -24,7 +32,11 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.MapPost("books", async (Book book, IBookService bookService,
+app.UseAuthorization();
+
+app.MapPost("books",
+    [Authorize(AuthenticationSchemes = ApiKeySchemeConstants.SchemeName)]
+    async (Book book, IBookService bookService,
     IValidator<Book> validator) =>
 {
     var validationResult = await validator.ValidateAsync(book);
