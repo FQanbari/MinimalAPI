@@ -6,6 +6,7 @@ using Library.API.Data;
 using Library.API.Models;
 using Library.API.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Json;
 using System.Net.Mail;
@@ -17,6 +18,11 @@ builder.Services.Configure<JsonOptions>(options =>
 {
     options.SerializerOptions.PropertyNameCaseInsensitive = true;
     options.SerializerOptions.IncludeFields = true;
+});
+const string _policyName = "AnyOrigin";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(_policyName, x => x.AllowAnyOrigin());
 });
 
 builder.Configuration.AddJsonFile("appsettings.Local.json", true, true);
@@ -38,6 +44,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseCors();
 app.UseSwagger();
 app.UseSwaggerUI();
 
@@ -129,10 +136,10 @@ app.MapDelete("books/{isbn}", async (string isbn, IBookService bookService,
 .Produces(404)
 .WithTags("Books");
 
-app.MapGet("status", () =>
+app.MapGet("status", [EnableCors(_policyName)] () =>
 {
     return Results.Extensions.Html(@"<div>page status</div>");
-});
+}).ExcludeFromDescription();//.RequireCors(_policyName);
 // Db init here 
 var databaseInitializer = app.Services.GetRequiredService<DatabaseInitializer>();
 await databaseInitializer.InitializeAsync();
