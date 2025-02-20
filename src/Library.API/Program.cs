@@ -1,5 +1,6 @@
 using FluentValidation;
 using FluentValidation.Results;
+using Library.API;
 using Library.API.Auth;
 using Library.API.Data;
 using Library.API.Models;
@@ -128,6 +129,10 @@ app.MapDelete("books/{isbn}", async (string isbn, IBookService bookService,
 .Produces(404)
 .WithTags("Books");
 
+app.MapGet("status", () =>
+{
+    return Results.Extensions.Html(@"<div>page status</div>");
+});
 // Db init here 
 var databaseInitializer = app.Services.GetRequiredService<DatabaseInitializer>();
 await databaseInitializer.InitializeAsync();
