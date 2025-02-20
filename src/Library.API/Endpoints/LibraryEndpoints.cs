@@ -5,17 +5,18 @@ using Library.API.Models;
 using Library.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
+using Library.API.Endpoints.Internal;
 
 namespace Library.API.Endpoints;
 
-public static class LibraryEndpoints
+public class LibraryEndpoints : IEndpoints
 {
-    public static void AddLibraryEndpoints(this IServiceCollection services)
+    public static void AddServices(IServiceCollection services,IConfiguration configuration)
     {
         services.AddSingleton<IBookService, BookService>();
     }
 
-    public static void UseLibraryEndpoints(this IEndpointRouteBuilder app, string policyName)
+    public static void DefineEndpoints(IEndpointRouteBuilder app)
     {
         app.MapPost("books",
         CreateBookAsync).WithName("CreateBook")
@@ -77,10 +78,7 @@ public static class LibraryEndpoints
         .Produces(404)
         .WithTags("Books");
 
-        app.MapGet("status", [EnableCors("policyName")] () =>
-        {
-            return Results.Extensions.Html(@"<div>page status</div>");
-        }).ExcludeFromDescription();//.RequireCors(_policyName);
+       
 
         static async Task<IResult> CreateBookAsync(Book book, IBookService bookService,
                     IValidator<Book> validator, LinkGenerator linker,
@@ -109,4 +107,6 @@ public static class LibraryEndpoints
             //return Results.Created($"/books/${book.Isbn}",book);
         }
     }
+
+   
 }
